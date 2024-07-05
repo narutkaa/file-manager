@@ -1,24 +1,35 @@
-// src/App.js
-import React, { useState } from 'react';
+import React from 'react';
 import AuthForm from './components/AuthForm';
+import { Button, Container } from '@mui/material';
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+const AuthenticatedApp = () => {
+  const { userName, signOut } = useAuth();
+
+  return (
+    <Container>
+      <h1>Hello, {userName}</h1>
+      <Button variant="contained" color="primary" onClick={signOut}>
+        Sign Out
+      </Button>
+    </Container>
+  );
+};
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  const handleAuthSuccess = (token) => {
-    localStorage.setItem('token', token);
-    setIsAuthenticated(true);
-  };
+  const { isAuthenticated } = useAuth();
 
   return (
     <div>
-      {!isAuthenticated ? (
-        <AuthForm onAuthSuccess={handleAuthSuccess} />
-      ) : (
-        <h1>Hello!</h1>
-      )}
+      {!isAuthenticated ? <AuthForm /> : <AuthenticatedApp />}
     </div>
   );
 };
 
-export default App;
+const AppContainer = () => (
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
+
+export default AppContainer;

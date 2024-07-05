@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
-import { TextField, Button, Container, Typography } from '@mui/material';
-import axios from 'axios';
+import { TextField, Button, Container, Typography, Alert } from '@mui/material';
+import { login, register } from '../api/auth';
+import { useAuth } from '../context/AuthContext';
 
-const AuthForm = ({ onAuthSuccess }) => {
-  const [login, setLogin] = useState('');
-  const [password, setPassword] = useState('');
+const AuthForm = () => {
+  const [loginInput, setLoginInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLogin, setIsLogin] = useState(true); // Переключатель между формами входа и регистрации
+  const [isLogin, setIsLogin] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const { handleAuthSuccess } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const endpoint = isLogin ? 'auth/login' : 'auth/register';
+    if (!loginInput || !passwordInput) {
+      setErrorMessage('Both fields are required');
+      return;
+    }
     try {
-      const response = await axios.post(`http://212.113.102.189:7000/${endpoint}`, {
-        login,
-        password,
-      });
-      console.log(response.data);
-      onAuthSuccess(response.data.token);
+      const response = isLogin 
+        ? await login(loginInput, passwordInput)
+        : await register(loginInput, passwordInput);
+      
+      handleAuthSuccess(response.data.token, loginInput);
+      setErrorMessage('');
     } catch (error) {
       console.error('Error during authentication', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        setErrorMessage(error.response.data.message);
+      } else {
+        setErrorMessage('An error occurred. Please try again.');
+      }
     }
   };
 
@@ -29,8 +41,8 @@ const AuthForm = ({ onAuthSuccess }) => {
       <form onSubmit={handleSubmit}>
         <TextField
           label="Login"
-          value={login}
-          onChange={(e) => setLogin(e.target.value)}
+          value={loginInput}
+          onChange={(e) => setLoginInput(e.target.value)}
           fullWidth
           required
           margin="normal"
@@ -38,8 +50,8 @@ const AuthForm = ({ onAuthSuccess }) => {
         <TextField
           label="Password"
           type={showPassword ? 'text' : 'password'}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={passwordInput}
+          onChange={(e) => setPasswordInput(e.target.value)}
           fullWidth
           required
           margin="normal"
@@ -54,6 +66,7 @@ const AuthForm = ({ onAuthSuccess }) => {
           {isLogin ? 'Switch to Register' : 'Switch to Login'}
         </Button>
       </form>
+      {errorMessage && <Alert severity="error" style={{ marginTop: '16px' }}>{errorMessage}</Alert>}
     </Container>
   );
 };
